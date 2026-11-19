@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Band Challenge | Guess the Material</title>
+<style>
+:root{
+ --ink:#1d2140;--muted:#5f6683;--paper:#f5f4fb;--card:#fff;--line:#e3e2f0;
+ --purple:#6b4ee0;--purple-d:#5738c9;--purple-t:#efeaff;
+ --cond:#e8920c;--cond-bg:#fff3d9;--cond-ink:#8a4f00;
+ --ins:#dc4a85;--ins-bg:#ffe8f1;--ins-ink:#a3235a;
+ --semi:#0f9d95;--semi-bg:#dcf6f3;--semi-ink:#0a6b66;
+ --good:#13875b;--good-bg:#e6f8ef;--bad:#c23a4f;--bad-bg:#fff0f2;
+ --shadow:0 10px 30px rgba(43,38,100,.08);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);line-height:1.45;font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+ background:radial-gradient(circle at 0% 0%,#ece6ff 0,transparent 30%),radial-gradient(circle at 100% 8%,#dff6f3 0,transparent 26%),var(--paper)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid #9b86f3;outline-offset:2px}
+svg{display:block}
+[hidden]{display:none!important}
+
+.wrap{max-width:1180px;margin:auto;padding:22px 20px 44px}
+header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.2px}
+.brand-icon{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,var(--purple),#a28bf6);display:grid;place-items:center;color:#fff;font-size:21px;box-shadow:0 6px 14px #6b4ee040}
+.progress-wrap{flex:1;max-width:340px;min-width:200px}
+.progress-top{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.bar{height:9px;border-radius:99px;background:#e7e4f6;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--semi),var(--purple),var(--ins));transition:width .5s cubic-bezier(.3,.8,.3,1)}
+
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin:14px 0 20px;flex-wrap:wrap}
+h1{font-size:clamp(30px,4.4vw,46px);line-height:1.05;letter-spacing:-1.4px;margin:0 0 8px}
+.sub{color:var(--muted);margin:0;max-width:600px}
+.scoreboard{display:flex;gap:10px;flex-wrap:wrap}
+.stat{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 16px;min-width:96px;box-shadow:0 4px 14px #25234a0a}
+.stat small{display:block;color:var(--muted);font-size:12px;font-weight:700}
+.stat strong{font-size:24px;display:inline-block}
+.stat.pop strong{animation:pop .45s ease}
+.float-pts{position:absolute;right:12px;top:6px;font-weight:800;color:var(--good);font-size:14px;animation:floatUp .9s ease-out forwards;pointer-events:none}
+
+.layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,1fr);gap:18px;align-items:start}
+.col{display:grid;gap:18px;min-width:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:20px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.panel h2{font-size:17px;margin:0;letter-spacing:-.2px;display:flex;align-items:center;gap:9px}
+.badge{width:24px;height:24px;border-radius:8px;background:var(--purple-t);color:var(--purple);display:inline-grid;place-items:center;font-weight:800;font-size:13px}
+.mini{font-size:12px;color:var(--muted)}
+
+/* legend */
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+.lg{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.lg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.lg.c i{background:var(--cond)}.lg.i i{background:var(--ins)}.lg.s i{background:var(--semi)}
+
+/* material cards */
+.material-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.material{position:relative;border:1.5px solid var(--line);background:#fbfbfe;border-radius:16px;padding:12px 6px 10px;text-align:center;transition:transform .15s,border-color .15s,background .25s;min-width:0;overflow:hidden}
+.material:hover{transform:translateY(-2px);border-color:#b9a8f4}
+.material .memoji{display:block;font-size:26px;line-height:1.1;margin-bottom:4px}
+.material .symbol{display:block;font-size:17px;font-weight:800;letter-spacing:-.4px}
+.material .mname{display:block;font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.material.active{border-color:var(--purple);background:var(--purple-t);box-shadow:0 0 0 3px #6b4ee026}
+.material .mark{position:absolute;top:6px;right:7px;font-size:12px;font-weight:800}
+.material.done{cursor:pointer}
+.material.done.t-Conductor{background:var(--cond-bg);border-color:#f3c677}
+.material.done.t-Insulator{background:var(--ins-bg);border-color:#f2a9c5}
+.material.done.t-Semiconductor{background:var(--semi-bg);border-color:#86d9d2}
+.material.done.t-Conductor .mname{color:var(--cond-ink)}
+.material.done.t-Insulator .mname{color:var(--ins-ink)}
+.material.done.t-Semiconductor .mname{color:var(--semi-ink)}
+.material.done.ok .mark{color:var(--good)}.material.done.no .mark{color:var(--bad)}
+.material.done.active{border-color:var(--purple)}
+
+/* challenge */
+.challenge{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:18px;padding:15px 17px;margin-bottom:14px;background:linear-gradient(110deg,#f3efff,#eefaf8);border:1px solid #e4defa}
+.challenge small{font-size:12px;font-weight:800;color:var(--purple)}
+.material-title{font-size:24px;font-weight:800;letter-spacing:-.6px;margin:2px 0}
+.material-desc{font-size:13px;color:var(--muted)}
+.atom-badge{width:60px;height:60px;flex:0 0 60px;border-radius:19px;background:#fff;display:grid;place-items:center;font-size:31px;box-shadow:0 5px 15px #4a3b8618}
+.atom-badge.swap{animation:pop .45s ease}
+.diagram-box{border:1px solid var(--line);border-radius:17px;padding:12px 10px 8px;background:#fdfdff}
+.diagram-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 4px 4px;flex-wrap:wrap}
+.diagram-top strong{font-size:13px}
+.diagram-top span{font-size:12px;color:var(--muted)}
+#diagram svg{width:100%;height:auto}
+.diagram-caption{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:11px;color:var(--muted);padding-top:4px}
+.key{display:inline-flex;align-items:center;gap:6px}
+.swatch{width:11px;height:11px;border-radius:3px;background:repeating-linear-gradient(135deg,#dc72a8 0 2px,#fae7f1 2px 5px);border:1px solid #d66b9d}
+.gap-note{margin-top:11px;padding:10px 12px;background:#f6f6fc;border-radius:12px;color:#4f5671;font-size:13px}
+.question{margin-top:16px}
+.question h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:9px}
+.answers{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.answer{position:relative;border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:13px 8px;font-weight:700;transition:transform .15s,border-color .15s,background .15s}
+.answer:hover:not(:disabled){transform:translateY(-2px);border-color:var(--purple);background:#f8f5ff}
+.answer:disabled{cursor:default}
+.answer.correct{border-color:#79c9a8;background:var(--good-bg);color:#0e6f4a;animation:pop .5s ease}
+.answer.wrong{border-color:#eaa1ab;background:var(--bad-bg);color:#a02d40;animation:shake .45s ease}
+.answer:disabled:not(.correct):not(.wrong){opacity:.55}
+.feedback{display:none;margin-top:12px;border-radius:14px;padding:12px 14px;font-size:13px}
+.feedback.show{display:block;animation:slideIn .35s ease}
+.feedback.good{background:var(--good-bg);color:#0f6a48}.feedback.bad{background:var(--bad-bg);color:#962a3c}
+.action-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+.progress-text{font-size:12px;color:var(--muted);font-weight:700}
+.primary{border:0;background:var(--purple);color:#fff;font-weight:800;padding:11px 17px;border-radius:12px;box-shadow:0 6px 14px #6b4ee033;transition:background .15s,transform .15s}
+.primary:hover:not(:disabled){background:var(--purple-d);transform:translateY(-1px)}
+.primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+/* lab */
+.lab-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--muted);transition:background .15s,color .15s}
+.tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
+.tab:disabled{opacity:.55;cursor:not-allowed}
+.stage{position:relative;aspect-ratio:4/3;border-radius:18px;border:1px solid #e5e1f6;overflow:hidden;background:radial-gradient(circle at 50% 45%,#fff 0,#f6f3ff 75%)}
+.stage svg,.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+#atomSvg.merging .atom-all{animation:merge .32s ease-in forwards}
+.shell{fill:none;stroke:#cdc7e6;stroke-width:1.5;stroke-dasharray:3 4}
+.shell.val{stroke:#e8a21c;stroke-width:2;stroke-dasharray:none;opacity:.8}
+.orbit{animation:spin linear infinite;transform-origin:160px 120px}
+.lab-info{margin-top:12px}
+.lab-info h3{margin:0 0 4px;font-size:16px;letter-spacing:-.2px}
+.lab-info p{margin:0;color:var(--muted);font-size:13px;min-height:58px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;background:#f3f1fb;font-size:11px;font-weight:700;color:#4b4f6a}
+.chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.chip.val{background:#fff3d6;color:#7d4b00}
+.lab-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.toggle{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 13px;font-weight:700;font-size:13px;transition:background .15s,border-color .15s}
+.toggle[aria-pressed="true"]{background:#e9fbf1;border-color:#7fd1a9;color:#0e6f4a}
+.toggle.heat[aria-pressed="true"]{background:#fff0e3;border-color:#f3b27b;color:#9a4a07}
+.meter{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:12px;font-weight:700;color:var(--muted)}
+.meter .bar{flex:1;height:10px}
+.meter .bar>i{transition:width .25s linear;background:linear-gradient(90deg,#f6c453,#e8920c)}
+.meter b{min-width:84px;text-align:right;color:var(--ink)}
+
+/* facts + how */
+.fact-card{background:linear-gradient(145deg,#26244a,#3b3263);color:#fff;border-radius:22px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.fact-card:after{content:"✦";position:absolute;right:18px;top:10px;font-size:52px;color:#ffffff12}
+.fact-kicker{font-size:12px;color:#cbbfff;font-weight:800}
+.fact-card h2{font-size:19px;margin:6px 0 9px;letter-spacing:-.2px}
+.fact-card p{font-size:13px;line-height:1.65;color:#e5e3f2;margin:0;min-height:92px}
+.fact-controls{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px}
+.fact-dots{display:flex;gap:4px;flex-wrap:wrap}
+.dot{width:6px;height:6px;border-radius:99px;background:#7a7496;transition:width .2s}
+.dot.active{width:16px;background:#cdbfff}
+.fact-next{background:#ffffff1c;color:#fff;border:1px solid #ffffff2a;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+.fact-next:hover{background:#ffffff2b}
+.how .step{display:flex;gap:10px;margin:11px 0;align-items:flex-start}
+.num{width:24px;height:24px;flex:0 0 24px;border-radius:8px;background:var(--purple-t);color:var(--purple);display:grid;place-items:center;font-weight:800;font-size:12px}
+.step p{margin:1px 0 0;color:var(--muted);font-size:13px}
+.tip{background:#fff8e8;border:1px solid #f4e3bd;color:#76571b;padding:11px 13px;border-radius:13px;font-size:13px}
+footer{text-align:center;color:#8a8ea3;font-size:12px;margin-top:22px}
+
+/* result */
+.result{padding:26px 12px;text-align:center}
+.result .big{font-size:56px;line-height:1}
+.result h2{font-size:26px;margin:10px 0 4px;justify-content:center}
+.result p{color:var(--muted);margin:0 0 14px}
+.result-chips{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.rchip{padding:5px 10px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--line);background:#fff}
+.rchip.ok{background:var(--good-bg);border-color:#a9ddc5;color:#0e6f4a}
+.rchip.no{background:var(--bad-bg);border-color:#efb3bb;color:#962a3c}
+
+/* confetti */
+.conf{position:fixed;width:7px;height:7px;border-radius:2px;pointer-events:none;z-index:60;animation:conf .8s ease-out forwards}
+
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes floatUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-22px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes merge{to{transform:scale(.25);opacity:0}}
+@keyframes conf{to{transform:translate(var(--dx),var(--dy)) rotate(280deg);opacity:0}}
+@keyframes glow{0%,100%{opacity:.25}50%{opacity:.6}}
+.glow{animation:glow 1.8s ease-in-out infinite}
+.atom-all{transform-origin:160px 120px}
+
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+@media(max-width:560px){
+ .wrap{padding:16px 12px 34px}.panel{padding:15px}
+ .material-grid{grid-template-columns:repeat(3,1fr)}
+ .answers{grid-template-columns:1fr}
+ .stat{flex:1}.challenge{padding:13px}.material-title{font-size:21px}
+ .progress-wrap{max-width:none;flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+ .orbit{animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div class="brand"><div class="brand-icon">⚡</div><span>Physics Playlab · Solid State Physics</span></div>
+ <div class="progress-wrap" aria-label="Progress">
+  <div class="progress-top"><span>Progress</span><span id="progLabel">0 of 9 materials</span></div>
+  <div class="bar"><i id="progFill"></i></div>
+ </div>
+</header>
+
+<section class="hero">
+ <div>
+  <h1>Guess the Material!</h1>
+  <p class="sub">Read the energy band diagram, decide if the material is a conductor, insulator or semiconductor, then zoom in from a single atom to a working circuit.</p>
+ </div>
+ <div class="scoreboard">
+  <div class="stat" id="statScore"><small>Score</small><strong id="score">0</strong></div>
+  <div class="stat"><small>Correct</small><strong id="correct">0/9</strong></div>
+  <div class="stat" id="statStreak"><small>Streak</small><strong id="streak">0 🔥</strong></div>
+ </div>
+</section>
+
+<div class="layout">
+ <div class="col">
+  <section class="panel">
+   <div class="panel-head">
+    <h2><span class="badge">1</span>Choose a material</h2>
+    <div class="legend" aria-label="Colour key, revealed after you answer">
+     <span class="mini">Colours appear once you answer:</span>
+     <span class="lg c"><i></i>Conductor</span><span class="lg i"><i></i>Insulator</span><span class="lg s"><i></i>Semiconductor</span>
+    </div>
+   </div>
+   <div class="material-grid" id="materials"></div>
+  </section>
+
+  <section class="panel">
+   <div class="challenge">
+    <div><small>Your material</small><div class="material-title" id="matTitle">Copper (Cu)</div><div class="material-desc" id="matDesc"></div></div>
+    <div class="atom-badge" id="matEmoji">🪙</div>
+   </div>
+   <div class="diagram-box">
+    <div class="diagram-top"><strong>2 · Observe the energy band diagram</strong><span id="bandTag">Band arrangement</span></div>
+    <div id="diagram"></div>
+    <div class="diagram-caption"><span class="key"><i class="swatch"></i> Allowed energy band</span><span>Vertical direction = increasing energy ↑</span></div>
+   </div>
+   <div class="gap-note" id="clue"></div>
+   <div class="question">
+    <h3><span class="badge">3</span>What type of material is this?</h3>
+    <div class="answers">
+     <button class="answer" data-answer="Conductor">⚡ Conductor</button>
+     <button class="answer" data-answer="Insulator">🛡️ Insulator</button>
+     <button class="answer" data-answer="Semiconductor">💡 Semiconductor</button>
+    </div>
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+    <div class="action-row"><span class="progress-text" id="progress">Question 1 of 9</span><button class="primary" id="next" disabled>Next material →</button></div>
+   </div>
+  </section>
+ </div>
+
+ <aside class="col">
+  <section class="panel">
+   <div class="panel-head">
+    <h2>Atom → Solid → Electricity</h2>
+    <div class="lab-tabs" role="tablist">
+     <button class="tab active" data-stage="atom" role="tab">Atom</button>
+     <button class="tab" data-stage="solid" role="tab">Solid</button>
+     <button class="tab" data-stage="electricity" role="tab" id="tabElec" disabled title="Answer the question to unlock">🔒 Electricity</button>
+    </div>
+   </div>
+   <div class="stage">
+    <svg id="atomSvg" viewBox="0 0 320 240" role="img" aria-label="Atom diagram"></svg>
+    <canvas id="labCanvas" hidden role="img" aria-label="Lattice and electron animation"></canvas>
+   </div>
+   <div class="lab-info">
+    <h3 id="labTitle"></h3>
+    <p id="labText"></p>
+    <div class="chips" id="labChips"></div>
+   </div>
+   <div class="lab-controls">
+    <button class="primary" id="labMain">⚛ Combine atoms</button>
+    <button class="toggle" id="voltBtn" aria-pressed="false" hidden>🔋 Voltage: off</button>
+    <button class="toggle heat" id="heatBtn" aria-pressed="false" hidden>🔥 Heat: off</button>
+   </div>
+   <div class="meter" id="meter" hidden><span>Current</span><div class="bar"><i id="meterFill"></i></div><b id="meterText">none</b></div>
+  </section>
+
+  <section class="fact-card">
+   <div class="fact-kicker">✦ Did you know?</div>
+   <h2 id="factTitle"></h2><p id="factText"></p>
+   <div class="fact-controls"><div class="fact-dots" id="factDots"></div><button class="fact-next" id="factNext">Next fact →</button></div>
+  </section>
+
+  <section class="panel how">
+   <h2>How to play</h2>
+   <div class="step"><span class="num">1</span><p>Pick a material card, or work through them in order.</p></div>
+   <div class="step"><span class="num">2</span><p>Study the valence band, conduction band and forbidden gap.</p></div>
+   <div class="step"><span class="num">3</span><p>Choose a type. A correct answer earns <b>10 points</b>.</p></div>
+   <div class="step"><span class="num">4</span><p>Answering unlocks the Electricity view. Switch on the voltage and watch what the electrons do.</p></div>
+   <div class="tip">💡 <b>Hint:</b> A large gap keeps electrons in the valence band. Overlapping bands let them move freely. A small gap sits in between.</div>
+  </section>
+ </aside>
+</div>
+<footer>Made for learning · Energy band theory · Models are simplified</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>a+Math.random()*(b-a);
+
+const CAT={
+ Conductor:{main:"#e8920c",tint:"#fff3d9",ink:"#8a4f00"},
+ Insulator:{main:"#dc4a85",tint:"#ffe8f1",ink:"#a3235a"},
+ Semiconductor:{main:"#0f9d95",tint:"#dcf6f3",ink:"#0a6b66"}
+};
+
+/* ---------- data ---------- */
+const MATS=[
+ {name:"Copper",symbol:"Cu",el:"Cu",type:"Conductor",emoji:"🪙",fact:0,
+  desc:"A common metal used in electrical wiring.",gap:"Overlapping bands",
+  clue:"Look at the bands: the valence band and conduction band overlap. There is no forbidden gap between them in this simplified diagram.",
+  explain:"Copper is a conductor. Its valence and conduction bands overlap, so electrons can move into available energy states easily. This allows electric current to flow.",
+  atom:{p:29,shells:[2,8,18,1],shown:"Copper",note:"Copper has a single, loosely held electron in its outer shell."}},
+ {name:"Aluminium",symbol:"Al",el:"Al",type:"Conductor",emoji:"🥫",fact:1,
+  desc:"A lightweight metal used in power cables.",gap:"Overlapping bands",
+  clue:"The two bands overlap, so electrons have available energy states to move into.",
+  explain:"Aluminium is a conductor. Its bands overlap, allowing electrons to move easily when a potential difference is applied.",
+  atom:{p:13,shells:[2,8,3],shown:"Aluminium",note:"Aluminium has three electrons in its outer shell."}},
+ {name:"Silver",symbol:"Ag",el:"Ag",type:"Conductor",emoji:"🥈",fact:2,
+  desc:"A metal with exceptionally high electrical conductivity.",gap:"Overlapping bands",
+  clue:"The valence and conduction bands overlap. This band arrangement is characteristic of a conductor.",
+  explain:"Silver is a conductor and has the highest electrical conductivity of the metals at room temperature. Its electronic bands allow mobile electrons.",
+  atom:{p:47,shells:[2,8,18,18,1],shown:"Silver",note:"Silver has one loosely held electron in its outer shell."}},
+ {name:"Glass",symbol:"—",el:"O",type:"Insulator",emoji:"🪟",fact:3,
+  desc:"A material commonly used in windows and laboratory equipment.",gap:"Very large (about 15 eV in the textbook model)",
+  clue:"Notice the very large forbidden energy gap separating the filled valence band from the empty conduction band.",
+  explain:"Glass is an insulator. It has very low electrical conductivity under ordinary conditions. The textbook model shows a large forbidden energy gap, making it difficult for electrons to reach the conduction band.",
+  atom:{p:8,shells:[2,6],shown:"Oxygen",note:"Glass is mostly silicon dioxide (SiO₂). An oxygen atom stands in for it here; real glass is a disordered network."}},
+ {name:"Rubber",symbol:"—",el:"C",type:"Insulator",emoji:"🛞",fact:4,
+  desc:"Used to cover many electrical wires for safety.",gap:"Large energy gap",
+  clue:"The valence band is filled and the conduction band is empty, with a large gap between them.",
+  explain:"Rubber is an electrical insulator. Its electrons are not easily available for conduction, so current does not pass through it easily under ordinary conditions.",
+  atom:{p:6,shells:[2,4],shown:"Carbon",note:"Rubber is a polymer built mostly from carbon and hydrogen. A carbon atom stands in for it here."}},
+ {name:"Wood (dry)",symbol:"—",el:"C",type:"Insulator",emoji:"🪵",fact:5,
+  desc:"Dry wood is a poor conductor of electricity.",gap:"Large energy gap",
+  clue:"Think of the large forbidden gap: electrons cannot easily reach the conduction band.",
+  explain:"Dry wood behaves as an insulator because it has very low conductivity. Moisture and impurities can change its electrical behaviour, so wet wood is more conductive than dry wood.",
+  atom:{p:6,shells:[2,4],shown:"Carbon",note:"Dry wood is mostly cellulose, made of carbon, hydrogen and oxygen. A carbon atom stands in for it here."}},
+ {name:"Silicon",symbol:"Si",el:"Si",type:"Semiconductor",emoji:"💎",fact:6,
+  desc:"The most widely used material in electronic chips.",gap:"Small (about 1 eV in the textbook model)",
+  clue:"There is a small forbidden energy gap (approximately 1 eV in your textbook diagram) between the filled valence band and empty conduction band.",
+  explain:"Silicon is a semiconductor. Its small energy gap allows some electrons to gain enough energy to enter the conduction band. Pure silicon has four valence electrons per atom.",
+  atom:{p:14,shells:[2,8,4],shown:"Silicon",note:"Silicon has four outer electrons, which it shares with four neighbours."}},
+ {name:"Germanium",symbol:"Ge",el:"Ge",type:"Semiconductor",emoji:"🔬",fact:7,
+  desc:"A semiconductor used in early electronic devices.",gap:"Small energy gap",
+  clue:"The energy gap is small, not large and not overlapping. That is the key clue for a semiconductor.",
+  explain:"Germanium is a semiconductor. It has four valence electrons and a small energy gap. Its band gap is smaller than silicon’s.",
+  atom:{p:32,shells:[2,8,18,4],shown:"Germanium",note:"Germanium also has four outer electrons and forms the same kind of crystal as silicon."}},
+ {name:"Gallium arsenide",symbol:"GaAs",el:"Ga",el2:"As",type:"Semiconductor",emoji:"📡",fact:8,
+  desc:"A semiconductor used in high-speed and optoelectronic devices.",gap:"Small energy gap (direct band gap)",
+  clue:"Like other semiconductors, it has a forbidden gap between the valence and conduction bands. The gap is not as large as in an insulator.",
+  explain:"Gallium arsenide (GaAs) is a semiconductor. It is especially useful in optoelectronic devices such as LEDs and laser diodes because it has a direct band gap.",
+  atom:{p:31,shells:[2,8,18,3],shown:"Gallium",note:"Gallium (3 outer electrons, shown) pairs with arsenic (5), so the crystal averages 4 per atom."}}
+];
+const FACTS=[
+ ["Why is copper used in wires?","Copper has high electrical conductivity and is ductile, so it can be drawn into thin wires. Silver conducts slightly better, but copper is far more economical for everyday wiring."],
+ ["Why do power lines use aluminium?","For the same resistance, an aluminium cable weighs roughly half as much as a copper one. Lighter cables mean the towers carry less load."],
+ ["Which metal conducts best?","At room temperature silver has the highest electrical conductivity of all metals. Its cost and tendency to tarnish keep it for special uses such as switch contacts and solar-cell wiring."],
+ ["Why are glass insulators on pylons?","Glass and ceramic discs hold high-voltage lines away from the metal tower. Their huge band gap means almost no current leaks through them."],
+ ["Why is rubber used around wires?","Rubber is an electrical insulator. It stops current escaping from the metal wire and protects people from electric shock."],
+ ["Is wet wood still an insulator?","Much less so. Water with dissolved salts contains ions that can carry current, which is why damp wood conducts far better than dry wood."],
+ ["Why is silicon so important?","Silicon is the key material in most computer chips and many solar cells. Its band gap is about 1.1 eV, and its conductivity can be controlled precisely by adding impurities."],
+ ["Where did germanium start?","The first transistor, built at Bell Labs in 1947, used germanium. Silicon later took over because it works better at higher temperatures."],
+ ["What is a direct band gap?","In gallium arsenide, an electron can drop across the gap and release a photon directly. That is why GaAs is used for LEDs and laser diodes."],
+ ["Why does heating help semiconductors?","Heat gives some electrons enough energy to cross the small band gap. Each one leaves a hole behind, so conductivity rises as the temperature rises."],
+ ["Why do metals get worse when hot?","Hotter atoms vibrate harder and scatter the moving electrons more often, so a metal’s resistance rises with temperature. Semiconductors behave the opposite way."],
+ ["What is a hole?","A hole is a missing electron in a bond. A neighbouring electron can hop in, which moves the hole the other way. It behaves like a positive charge carrier."],
+ ["What is doping?","Adding a tiny amount of phosphorus or boron to silicon can change its conductivity by a factor of millions. This is how diodes and transistors are made."],
+ ["How big are the band gaps?","Roughly: germanium 0.67 eV, silicon 1.1 eV, gallium arsenide 1.4 eV. Diamond is an insulator at about 5.5 eV."],
+ ["Electrons are slow, so why is light instant?","Electrons in a copper wire drift at well under a millimetre per second. The light comes on at once because the electric field travels through the wire at a large fraction of the speed of light."]
+];
+
+/* ---------- state ---------- */
+let selected=0,score=0,correct=0,streak=0,factIndex=0,finished=false;
+const results={}; // index -> {ok,choice}
+const total=MATS.length;
+const seenCount=()=>Object.keys(results).length;
+
+/* ---------- band diagram (unchanged concept) ---------- */
+function bandSVG(type){
+ const hatch='<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="8" height="8" fill="#fae8f1"/><line x1="0" y1="0" x2="0" y2="8" stroke="#d96d9e" stroke-width="2"/></pattern></defs>';
+ let bands="";
+ if(type==="Insulator"){
+  bands='<rect x="92" y="46" width="370" height="70" rx="2" fill="url(#hatch)" stroke="#c85d91" stroke-width="2"/><rect x="92" y="267" width="370" height="70" rx="2" fill="url(#hatch)" stroke="#c85d91" stroke-width="2"/><text x="277" y="86" text-anchor="middle" class="bandlabel">CONDUCTION BAND</text><text x="277" y="308" text-anchor="middle" class="bandlabel">VALENCE BAND</text><line x1="68" y1="119" x2="68" y2="266" stroke="#4e5570" stroke-width="1.5"/><path d="M62 127 L68 117 L74 127 M62 258 L68 268 L74 258" fill="none" stroke="#4e5570" stroke-width="1.5"/><text x="55" y="194" text-anchor="end" class="small">≈ 15 eV</text><text x="277" y="190" text-anchor="middle" class="small">FORBIDDEN ENERGY GAP</text>';
+ }else if(type==="Conductor"){
+  bands='<rect x="92" y="46" width="370" height="112" rx="2" fill="url(#hatch)" stroke="#c85d91" stroke-width="2"/><rect x="92" y="124" width="370" height="112" rx="2" fill="url(#hatch)" stroke="#c85d91" stroke-width="2"/><text x="277" y="87" text-anchor="middle" class="bandlabel">CONDUCTION BAND</text><text x="277" y="217" text-anchor="middle" class="bandlabel">VALENCE BAND</text><path d="M480 54 h12 v176 h-12" fill="none" stroke="#6b4ee0" stroke-width="2"/><text x="500" y="147" class="small">Bands</text><text x="500" y="163" class="small">overlap</text>';
+ }else{
+  bands='<rect x="92" y="46" width="370" height="82" rx="2" fill="url(#hatch)" stroke="#c85d91" stroke-width="2"/><rect x="92" y="244" width="370" height="82" rx="2" fill="url(#hatch)" stroke="#c85d91" stroke-width="2"/><text x="277" y="94" text-anchor="middle" class="bandlabel">CONDUCTION BAND</text><text x="277" y="292" text-anchor="middle" class="bandlabel">VALENCE BAND</text><line x1="480" y1="129" x2="480" y2="243" stroke="#4e5570" stroke-width="1.5"/><path d="M474 137 L480 127 L486 137 M474 235 L480 245 L486 235" fill="none" stroke="#4e5570" stroke-width="1.5"/><text x="496" y="184" class="small">≈ 1 eV</text><text x="496" y="201" class="tiny">SMALL GAP</text>';
+ }
+ return '<svg viewBox="0 0 590 390" role="img" aria-label="'+type+' energy band diagram">'+hatch+'<style>.axis{stroke:#68b9b4;stroke-width:2.5}.bandlabel{font:700 14px Arial,sans-serif;fill:#34334a}.small{font:12px Arial,sans-serif;fill:#50556c}.tiny{font:10px Arial,sans-serif;fill:#73788b}</style><line x1="65" y1="22" x2="65" y2="350" class="axis"/><line x1="65" y1="350" x2="550" y2="350" class="axis"/><path d="M59 38 L65 25 L71 38" fill="none" stroke="#68b9b4" stroke-width="2"/><text x="24" y="190" transform="rotate(-90 24 190)" text-anchor="middle" class="small">BAND ENERGY</text>'+bands+'<text x="305" y="380" text-anchor="middle" class="tiny">ENERGY BAND REPRESENTATION (SCHEMATIC)</text></svg>';
+}
+
+/* ---------- material cards ---------- */
+function renderCards(){
+ $("materials").innerHTML=MATS.map((m,i)=>{
+  const r=results[i];
+  const cls=["material"];
+  if(i===selected&&!finished)cls.push("active");
+  if(r){cls.push("done","t-"+m.type,r.ok?"ok":"no")}
+  return '<button class="'+cls.join(" ")+'" data-i="'+i+'" aria-label="'+m.name+(r?" ("+m.type+", "+(r.ok?"correct":"incorrect")+")":"")+'">'+
+   (r?'<span class="mark">'+(r.ok?"✓":"✗")+'</span>':"")+
+   '<span class="memoji">'+m.emoji+'</span><span class="symbol">'+m.symbol+'</span><span class="mname">'+m.name+'</span></button>';
+ }).join("");
+ document.querySelectorAll(".material").forEach(b=>b.addEventListener("click",()=>selectMaterial(+b.dataset.i)));
+}
+
+/* ---------- score helpers ---------- */
+function tween(el,from,to,fmt){
+ if(reduce||from===to){el.textContent=fmt(to);return}
+ const t0=performance.now(),d=450;
+ (function f(now){const k=clamp((now-t0)/d);el.textContent=fmt(Math.round(from+(to-from)*k));if(k<1)requestAnimationFrame(f)})(t0);
+}
+function popStat(id){const e=$(id);e.classList.remove("pop");void e.offsetWidth;e.classList.add("pop")}
+function updateScoreboard(prevScore){
+ tween($("score"),prevScore,score,v=>String(v));
+ $("correct").textContent=correct+"/"+total;
+ $("streak").textContent=streak+" 🔥";
+ const n=seenCount();
+ $("progFill").style.width=(n/total*100)+"%";
+ $("progLabel").textContent=n+" of "+total+" materials";
+}
+function burst(el){
+ if(reduce)return;
+ const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+ const cols=["#e8920c","#0f9d95","#6b4ee0","#dc4a85","#13875b"];
+ for(let i=0;i<18;i++){
+  const s=document.createElement("i"),a=Math.random()*6.283,d=45+Math.random()*70;
+  s.className="conf";
+  s.style.cssText="left:"+x+"px;top:"+y+"px;background:"+cols[i%cols.length]+";--dx:"+(Math.cos(a)*d)+"px;--dy:"+(Math.sin(a)*d-34)+"px";
+  document.body.appendChild(s);setTimeout(()=>s.remove(),850);
+ }
+}
+
+/* ---------- game flow ---------- */
+function setAnswerButtons(r,m){
+ document.querySelectorAll(".answer").forEach(b=>{
+  b.className="answer";b.disabled=!!r;
+  if(r){
+   if(b.dataset.answer===m.type)b.classList.add("correct");
+   else if(b.dataset.answer===r.choice&&!r.ok)b.classList.add("wrong");
+  }
+ });
+}
+function showFeedback(r,m){
+ const f=$("feedback");
+ if(!r){f.className="feedback";f.textContent="";return}
+ f.className="feedback show "+(r.ok?"good":"bad");
+ f.innerHTML=(r.ok?"<b>✓ Correct! +10 points</b>":"<b>Not quite.</b> The correct answer is <b>"+m.type+"</b>.")+"<br>"+m.explain+"<br><b>Electricity view unlocked →</b> switch it on to see why.";
+}
+function syncNext(){
+ const b=$("next"),r=results[selected];
+ if(finished){b.disabled=false;b.textContent="Play again ↻";return}
+ b.disabled=!r;
+ b.textContent=(r&&seenCount()===total)?"See your result →":"Next material →";
+ $("progress").textContent=r?(seenCount()+" of "+total+" completed"):("Question "+(seenCount()+1)+" of "+total);
+}
+function selectMaterial(i){
+ finished=false;selected=i;
+ const m=MATS[i],r=results[i];
+ $("matTitle").textContent=m.name+(m.symbol!=="—"?" ("+m.symbol+")":"");
+ $("matDesc").textContent=m.desc;
+ const eb=$("matEmoji");eb.textContent=m.emoji;eb.classList.remove("swap");void eb.offsetWidth;eb.classList.add("swap");
+ $("diagram").innerHTML=bandSVG(m.type);
+ $("bandTag").textContent=m.gap;
+ $("clue").textContent=m.clue;
+ setAnswerButtons(r,m);showFeedback(r,m);
+ factIndex=m.fact;renderFact();
+ buildLab(m);
+ if(r)unlockLab(true);
+ setStage("atom");
+ renderCards();syncNext();
+}
+function answer(choice){
+ if(finished||results[selected])return;
+ const m=MATS[selected],ok=choice===m.type,prev=score;
+ results[selected]={ok,choice};
+ if(ok){score+=10;correct++;streak++}else streak=0;
+ setAnswerButtons(results[selected],m);showFeedback(results[selected],m);
+ updateScoreboard(prev);
+ if(ok){
+  popStat("statScore");popStat("statStreak");
+  const fl=document.createElement("span");fl.className="float-pts";fl.textContent="+10";$("statScore").appendChild(fl);setTimeout(()=>fl.remove(),950);
+  const btn=document.querySelector('.answer[data-answer="'+choice+'"]');if(btn)burst(btn);
+ }
+ renderCards();syncNext();
+ unlockLab(false);
+}
+function next(){
+ if(finished){restart();return}
+ if(!results[selected])return;
+ if(seenCount()===total){finish();return}
+ let n=-1;
+ for(let k=1;k<=total;k++){const j=(selected+k)%total;if(!results[j]){n=j;break}}
+ if(n>=0)selectMaterial(n);
+}
+function finish(){
+ finished=true;
+ const pct=Math.round(correct/total*100);
+ $("matTitle").textContent="Challenge complete!";
+ $("matDesc").textContent="You scored "+score+" out of "+(total*10)+" points.";
+ $("matEmoji").textContent=pct>=80?"🏆":"🎓";
+ $("bandTag").textContent="Your result";
+ $("diagram").innerHTML='<div class="result"><div class="big">'+(pct>=80?"🏆":"🎉")+'</div><h2>'+pct+'% correct</h2><p>You identified '+correct+' of '+total+' materials. Tap any material below to revisit its atom, solid and circuit.</p><div class="result-chips">'+
+  MATS.map((m,i)=>'<span class="rchip '+(results[i].ok?"ok":"no")+'">'+m.emoji+" "+m.name+" "+(results[i].ok?"✓":"✗")+'</span>').join("")+'</div></div>';
+ $("clue").textContent="Review the facts on the right, then play again to improve your score.";
+ document.querySelectorAll(".answer").forEach(b=>{b.disabled=true;b.className="answer"});
+ $("feedback").className="feedback";
+ renderCards();syncNext();
+ $("progress").textContent="All "+total+" completed";
+}
+function restart(){
+ for(const k in results)delete results[k];
+ score=0;correct=0;streak=0;finished=false;
+ $("score").textContent="0";updateScoreboard(0);
+ selectMaterial(0);
+}
+function renderFact(){
+ const f=FACTS[factIndex];
+ $("factTitle").textContent=f[0];$("factText").textContent=f[1];
+ $("factDots").innerHTML=FACTS.map((_,i)=>'<span class="dot'+(i===factIndex?" active":"")+'"></span>').join("");
+}
+
+/* ---------- atom (SVG, rotating shells) ---------- */
+function atomSVG(m){
+ const a=m.atom,cx=160,cy=120,n=a.shells.length,step=Math.min(27,104/n);
+ let rings="",orbits="";
+ a.shells.forEach((count,k)=>{
+  const r=step*(k+1),val=k===n-1;
+  rings+='<circle class="shell'+(val?" val":"")+'" cx="'+cx+'" cy="'+cy+'" r="'+r.toFixed(1)+'"/>';
+  const dur=10+k*6,dir=k%2?"reverse":"normal";
+  let es="";
+  for(let i=0;i<count;i++){
+   const ang=Math.PI*2*i/count+k*0.5,x=(cx+Math.cos(ang)*r).toFixed(1),y=(cy+Math.sin(ang)*r).toFixed(1);
+   if(val){
+    es+='<circle class="glow" cx="'+x+'" cy="'+y+'" r="9" fill="#f6c453"/><circle cx="'+x+'" cy="'+y+'" r="5.2" fill="#f2b84b" stroke="#a86a00" stroke-width="1.4"><title>Valence electron</title></circle>';
+   }else{
+    es+='<circle cx="'+x+'" cy="'+y+'" r="3.8" fill="#4b8be0" stroke="#fff" stroke-width="1"><title>Inner electron, shell '+(k+1)+'</title></circle>';
+   }
+  }
+  orbits+='<g class="orbit" style="animation-duration:'+dur+'s;animation-direction:'+dir+'">'+es+'</g>';
+ });
+ return '<g class="atom-all">'+rings+orbits+
+  '<circle cx="'+cx+'" cy="'+cy+'" r="14" fill="#6b4ee0" stroke="#fff" stroke-width="3"/>'+
+  '<text x="'+cx+'" y="'+(cy+3.5)+'" text-anchor="middle" font-size="'+(a.p>=100?8:9.5)+'" font-weight="700" fill="#fff" font-family="Arial,sans-serif">'+a.p+'+</text></g>';
+}
+
+/* ---------- lab (canvas lattice + particles) ---------- */
+const cv=$("labCanvas"),ctx=cv.getContext("2d");
+const LW=320,LH=240,COLS=6,ROWS=4,X0=45,Y0=51,DX=46,DY=46;
+let lab={m:null,stage:"atom",revealed:false};
+
+function buildLab(m){
+ const atoms=[];
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  atoms.push({tx:X0+c*DX,ty:Y0+r*DY,sx:rand(14,306),sy:rand(14,226),r:r,c:c,el:(m.el2&&(r+c)%2)?m.el2:m.el,ph:[rand(0,6.28),rand(0,6.28),rand(0,6.28)]});
+ }
+ lab={m:m,atoms:atoms,stage:"atom",revealed:false,revealStart:0,combineStart:0,volt:false,heat:false,free:[],bonds:[],genAcc:0,exits:[],level:0,shift:0,lastMeter:""};
+ if(m.type==="Conductor"){for(let i=0;i<30;i++)lab.free.push({x:rand(52,268),y:rand(44,196),vx:0,vy:0})}
+ if(m.type==="Semiconductor"){
+  const idx=(r,c)=>r*COLS+c;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+   if(c<COLS-1)lab.bonds.push({x:(atoms[idx(r,c)].tx+atoms[idx(r,c+1)].tx)/2,y:atoms[idx(r,c)].ty,hz:true,a:idx(r,c),b:idx(r,c+1),hole:false,nb:[]});
+   if(r<ROWS-1)lab.bonds.push({x:atoms[idx(r,c)].tx,y:(atoms[idx(r,c)].ty+atoms[idx(r+1,c)].ty)/2,hz:false,a:idx(r,c),b:idx(r+1,c),hole:false,nb:[]});
+  }
+  lab.bonds.forEach((p,i)=>lab.bonds.forEach((q,j)=>{if(i!==j&&Math.hypot(p.x-q.x,p.y-q.y)<34)p.nb.push(q)}));
+ }
+}
+function unlockLab(instant){
+ if(!lab.m)return;
+ lab.revealed=true;lab.revealStart=instant?-9999:performance.now();
+ const t=$("tabElec");t.disabled=false;t.textContent="⚡ Electricity";t.title="";
+ updateLabUI();
+}
+function setStage(s){
+ if(s==="electricity"&&!lab.revealed)return;
+ const prev=lab.stage;lab.stage=s;
+ if(prev==="atom"&&s!=="atom")lab.combineStart=performance.now();
+ if(s!=="electricity"){lab.volt=false;lab.heat=false}
+ const svg=$("atomSvg");
+ svg.classList.remove("merging");
+ if(s==="atom")svg.innerHTML=atomSVG(lab.m);
+ svg.hidden=s!=="atom";cv.hidden=s==="atom";
+ if(s!=="atom")resizeCanvas();
+ if(!lab.revealed){const t=$("tabElec");t.disabled=true;t.textContent="🔒 Electricity";t.title="Answer the question to unlock"}
+ updateLabUI();
+}
+function updateLabUI(){
+ const m=lab.m,s=lab.stage,rev=lab.revealed,t=m.type;
+ document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.stage===s));
+ const main=$("labMain");
+ let title="",text="",chips="";
+ if(s==="atom"){
+  const val=m.atom.shells[m.atom.shells.length-1];
+  title=m.atom.shown+": a single atom";
+  text=m.atom.note;
+  chips='<span class="chip val"><i style="background:#f2b84b"></i>Valence electrons: '+val+'</span><span class="chip"><i style="background:#4b8be0"></i>Inner electrons</span><span class="chip"><i style="background:#6b4ee0"></i>Nucleus (protons: '+m.atom.p+')</span>';
+  main.textContent="⚛ Combine atoms";main.disabled=false;
+ }else if(s==="solid"){
+  title="Atoms packed into a solid";
+  if(!rev){text="Billions of atoms settle into a repeating pattern. Make your guess to reveal how the electrons behave inside this material.";chips='<span class="chip">🔒 Electron behaviour hidden until you answer</span>'}
+  else if(t==="Conductor"){text="The outer electrons let go of their atoms and form a shared sea that roams through the whole metal. The atoms left behind are positive ion cores.";chips='<span class="chip"><i style="background:#f2b84b"></i>Free electrons</span><span class="chip"><i style="background:#e8920c"></i>Positive ion cores</span>'}
+  else if(t==="Insulator"){text="Every electron stays locked to its own atom or bond. There are almost no free charges that could move.";chips='<span class="chip"><i style="background:#f2b84b"></i>Bound electrons</span>'}
+  else{text="Neighbouring atoms share electron pairs in covalent bonds. Now and then heat knocks an electron loose and leaves a hole behind.";chips='<span class="chip"><i style="background:#f2b84b"></i>Bond electrons</span><span class="chip"><i style="background:#dc4a85"></i>Hole (h⁺)</span>'}
+  main.disabled=!rev;
+  main.textContent=rev?"⚡ Add electricity":"🔒 Answer to unlock electricity";
+ }else{
+  const v=lab.volt;
+  title=t==="Conductor"?"Mobile electrons carry current":t==="Insulator"?"Electrons stay bound":"Electrons and holes carry current";
+  if(t==="Conductor")text=v?"The electric field pushes the free electrons toward the + terminal. This steady drift is the current.":"Free electrons dart about in every direction, so there is no net current until you apply a voltage.";
+  else if(t==="Insulator")text=v?"The field nudges the electrons a little, but they stay bound to their atoms. Almost no current flows.":"Electrons stay in place around their atoms. Switch on the voltage and see whether anything changes.";
+  else text=v?"Free electrons drift toward +, while holes hop the opposite way as neighbouring electrons fill them. Both carry current.":(lab.heat?"Heat keeps creating electron–hole pairs. Without a voltage they wander randomly and recombine.":"A few pairs form by themselves at room temperature. Add heat to create many more.");
+  chips='<span class="chip"><i style="background:#f2b84b"></i>Electron</span>'+(t==="Semiconductor"?'<span class="chip"><i style="background:#dc4a85"></i>Hole (h⁺)</span>':"");
+  main.textContent="↺ Back to a single atom";main.disabled=false;
+ }
+ $("labTitle").textContent=title;$("labText").textContent=text;$("labChips").innerHTML=chips;
+ const el=s==="electricity";
+ const vb=$("voltBtn"),hb=$("heatBtn");
+ vb.hidden=!el;hb.hidden=!(el&&t==="Semiconductor");
+ vb.setAttribute("aria-pressed",String(lab.volt));vb.textContent="🔋 Voltage: "+(lab.volt?"on":"off");
+ hb.setAttribute("aria-pressed",String(lab.heat));hb.textContent="🔥 Heat: "+(lab.heat?"on":"off");
+ $("meter").hidden=!el;
+ cv.setAttribute("aria-label",m.name+" "+s+" animation");
+}
+function resizeCanvas(){
+ const r=cv.getBoundingClientRect();if(!r.width)return;
+ const dpr=Math.min(window.devicePixelRatio||1,2);
+ cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.width*0.75*dpr);
+}
+window.addEventListener("resize",()=>{if(lab.stage!=="atom")resizeCanvas()});
+
+/* simulation */
+function sim(dt,now){
+ const m=lab.m,t=m.type,el=lab.stage==="electricity",drive=el&&lab.volt,heat=el&&lab.heat;
+ if(!lab.revealed)return;
+ const damp=Math.pow(.94,dt*60);
+ let target=0;
+ if(t==="Conductor"){
+  for(const e of lab.free){
+   e.vx=(e.vx+(Math.random()-.5)*2000*dt)*damp;e.vy=(e.vy+(Math.random()-.5)*2000*dt)*damp;
+   e.x+=(e.vx+(drive?75:0))*dt;e.y+=e.vy*dt;
+   if(e.x>290)e.x=38;if(e.x<38)e.x=290;
+   if(e.y<34){e.y=34;e.vy=Math.abs(e.vy)}if(e.y>206){e.y=206;e.vy=-Math.abs(e.vy)}
+  }
+  target=drive?.92:0;
+ }else if(t==="Insulator"){
+  for(const a of lab.atoms)for(let k=0;k<3;k++)a.ph[k]+=dt*(2.4+k*.5);
+  lab.shift+=((drive?3.5:0)-lab.shift)*Math.min(1,dt*6);
+  target=drive?.02:0;
+ }else{
+  const rate=heat?4.5:.4;
+  lab.genAcc+=rate*dt;
+  while(lab.genAcc>=1){
+   lab.genAcc-=1;
+   if(lab.free.length>=14)continue;
+   const full=lab.bonds.filter(b=>!b.hole);if(!full.length)continue;
+   const b=full[Math.floor(Math.random()*full.length)];
+   b.hole=true;lab.free.push({x:b.x,y:b.y,vx:0,vy:0});
+  }
+  for(let i=lab.free.length-1;i>=0;i--){
+   const e=lab.free[i];
+   e.vx=(e.vx+(Math.random()-.5)*1800*dt)*damp;e.vy=(e.vy+(Math.random()-.5)*1800*dt)*damp;
+   e.x+=(e.vx+(drive?60:0))*dt;e.y+=e.vy*dt;
+   if(e.y<34){e.y=34;e.vy=Math.abs(e.vy)}if(e.y>206){e.y=206;e.vy=-Math.abs(e.vy)}
+   if(e.x<36){e.x=36;e.vx=Math.abs(e.vx)}
+   if(e.x>292){lab.free.splice(i,1);lab.exits.push(now);continue}
+   // recombination
+   for(const b of lab.bonds){
+    if(b.hole&&Math.hypot(b.x-e.x,b.y-e.y)<8){b.hole=false;lab.free.splice(i,1);break}
+   }
+  }
+  for(const b of lab.bonds){
+   if(!b.hole)continue;
+   if(Math.random()<(drive?3.2:1.1)*dt){
+    let opts=b.nb.filter(n=>!n.hole);
+    if(drive){
+     const left=opts.filter(n=>n.x<b.x-5);
+     if(left.length)opts=left;
+     else if(b.x<75){b.hole=false;lab.exits.push(now);continue}
+     else opts=[];
+    }
+    if(opts.length){const n=opts[Math.floor(Math.random()*opts.length)];n.hole=true;b.hole=false}
+   }
+  }
+  while(lab.exits.length&&now-lab.exits[0]>2000)lab.exits.shift();
+  target=el?clamp(lab.exits.length/2/5):0;
+ }
+ lab.level+=(target-lab.level)*Math.min(1,dt*3);
+ if(el)updateMeter();
+}
+function updateMeter(){
+ const v=lab.level;
+ const txt=v<.03?"≈ none":v<.3?"small":v<.65?"moderate":"large";
+ if(txt!==lab.lastMeter){$("meterText").textContent=txt;lab.lastMeter=txt}
+ $("meterFill").style.width=Math.max(2,v*100)+"%";
+}
+
+/* drawing */
+const easeOutBack=t=>{const c1=1.25,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)};
+function dot(x,y,r,fill,stroke){
+ ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
+}
+function draw(now){
+ const s=cv.width/LW;if(!s)return;
+ ctx.setTransform(s,0,0,s,0,0);ctx.clearRect(0,0,LW,LH);ctx.textBaseline="middle";
+ const m=lab.m,t=m.type,cat=CAT[t],el=lab.stage==="electricity";
+ const since=(now-lab.combineStart)/1000;
+ const detail=lab.revealed?(reduce?1:clamp((now-lab.revealStart)/700)):0;
+ const lineA=reduce?1:clamp((since-1.4)/.5);
+ const settled=reduce||since>1.8;
+ const pos=lab.atoms.map((a,i)=>{
+  if(reduce)return[a.tx,a.ty];
+  const q=clamp((since-i*.03)/1.0),e=easeOutBack(q);
+  return[a.sx+(a.tx-a.sx)*e,a.sy+(a.ty-a.sy)*e];
+ });
+
+ if(el){
+  ctx.globalAlpha=lab.volt?1:.4;
+  ctx.fillStyle="#3b82d9";ctx.fillRect(8,48,8,144);
+  ctx.fillStyle="#e04f4f";ctx.fillRect(304,48,8,144);
+  ctx.font="bold 16px Arial,sans-serif";ctx.textAlign="center";
+  ctx.fillStyle="#3b82d9";ctx.fillText("−",12,40);ctx.fillStyle="#e04f4f";ctx.fillText("+",308,40);
+  ctx.globalAlpha=1;
+ }
+ // lattice lines
+ const idx=(r,c)=>r*COLS+c;
+ ctx.lineCap="round";
+ const hideLines=t==="Conductor"?detail*.85:0;
+ ctx.strokeStyle="rgba(107,78,224,.35)";ctx.lineWidth=2;ctx.globalAlpha=lineA*(1-hideLines);
+ ctx.beginPath();
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  const p=pos[idx(r,c)];
+  if(c<COLS-1){const q=pos[idx(r,c+1)];ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1])}
+  if(r<ROWS-1){const q=pos[idx(r+1,c)];ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1])}
+ }
+ ctx.stroke();
+ if(t==="Semiconductor"&&detail>0){
+  ctx.globalAlpha=lineA*detail;ctx.strokeStyle=cat.main;ctx.lineWidth=3.2;
+  ctx.beginPath();
+  for(const b of lab.bonds){const p=pos[b.a],q=pos[b.b];ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1])}
+  ctx.stroke();
+ }
+ ctx.globalAlpha=1;
+
+ // atoms
+ ctx.textAlign="center";ctx.textBaseline="middle";
+ const R=t==="Conductor"?13-3*detail:13;
+ lab.atoms.forEach((a,i)=>{
+  const p=pos[i];
+  ctx.globalAlpha=1;
+  dot(p[0],p[1],R,"#ece8fb","#6b4ee0");
+  if(detail>0){ctx.globalAlpha=detail;dot(p[0],p[1],R,cat.tint,cat.main);ctx.globalAlpha=1}
+  ctx.fillStyle="#2b2f52";ctx.font="bold "+(a.el.length>1?9:10)+"px Arial,sans-serif";ctx.fillText(a.el,p[0],p[1]+.5);
+  if(t==="Conductor"&&detail>0){ctx.globalAlpha=detail;ctx.fillStyle=cat.ink;ctx.font="bold 10px Arial,sans-serif";ctx.fillText("+",p[0]+R-1,p[1]-R+2);ctx.globalAlpha=1}
+ });
+
+ // particles
+ if(detail>0&&settled){
+  const A=detail*(reduce?1:clamp((since-1.8)/.4+1));
+  ctx.globalAlpha=A;
+  if(t==="Conductor"){
+   for(const e of lab.free)dot(e.x,e.y,3.6,"#f2b84b","#a86a00");
+  }else if(t==="Insulator"){
+   lab.atoms.forEach((a,i)=>{
+    ctx.beginPath();ctx.arc(a.tx+lab.shift,a.ty,19,0,6.2832);ctx.strokeStyle="rgba(220,74,133,.28)";ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.stroke();ctx.setLineDash([]);
+    for(let k=0;k<3;k++)dot(a.tx+lab.shift+Math.cos(a.ph[k])*19,a.ty+Math.sin(a.ph[k])*19,2.7,"#f2b84b","#a86a00");
+   });
+  }else{
+   for(const b of lab.bonds){
+    const dx=b.hz?4.5:0,dy=b.hz?0:4.5;
+    if(!b.hole){dot(b.x-dx,b.y-dy,2.8,"#f2b84b","#a86a00");dot(b.x+dx,b.y+dy,2.8,"#f2b84b","#a86a00")}
+    else{
+     dot(b.x-dx,b.y-dy,2.8,"#f2b84b","#a86a00");
+     ctx.beginPath();ctx.arc(b.x,b.y,8,0,6.2832);ctx.strokeStyle="#dc4a85";ctx.lineWidth=1.6;ctx.setLineDash([2,2]);ctx.stroke();ctx.setLineDash([]);
+     ctx.fillStyle="#c33274";ctx.font="bold 8px Arial,sans-serif";ctx.fillText("h⁺",b.x+3,b.y-.5);
+    }
+   }
+   for(const e of lab.free)dot(e.x,e.y,3.6,"#f2b84b","#a86a00");
+  }
+  ctx.globalAlpha=1;
+ }
+ if(el&&lab.volt&&t!=="Insulator"){
+  ctx.globalAlpha=.7;ctx.fillStyle="#5f6683";ctx.font="bold 10px Arial,sans-serif";ctx.fillText("electron flow  →",LW/2,226);ctx.globalAlpha=1;
+ }
+}
+let lastT=0;
+function frame(now){
+ requestAnimationFrame(frame);
+ if(!lab.m||lab.stage==="atom"||document.hidden){lastT=now;return}
+ const dt=Math.min(.05,(now-lastT)/1000||0);lastT=now;
+ sim(dt,now);draw(now);
+}
+requestAnimationFrame(frame);
+
+/* ---------- events ---------- */
+document.querySelectorAll(".answer").forEach(b=>b.addEventListener("click",()=>answer(b.dataset.answer)));
+$("next").addEventListener("click",next);
+$("factNext").addEventListener("click",()=>{factIndex=(factIndex+1)%FACTS.length;renderFact()});
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setStage(b.dataset.stage)));
+$("labMain").addEventListener("click",()=>{
+ const s=lab.stage;
+ if(s==="atom"){
+  if(reduce){setStage("solid");return}
+  $("atomSvg").classList.add("merging");
+  setTimeout(()=>{if(lab.stage==="atom")setStage("solid")},300);
+ }else if(s==="solid"){setStage("electricity")}
+ else{setStage("atom")}
+});
+$("voltBtn").addEventListener("click",()=>{lab.volt=!lab.volt;updateLabUI()});
+$("heatBtn").addEventListener("click",()=>{lab.heat=!lab.heat;updateLabUI()});
+
+/* ---------- start ---------- */
+updateScoreboard(0);
+selectMaterial(0);
+})();
+</script>
+</body>
+</html>
