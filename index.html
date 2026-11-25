@@ -586,7 +586,7 @@ function setStage(s){
  const svg=$("atomSvg");
  svg.classList.remove("merging");
  if(s==="atom")svg.innerHTML=atomSVG(lab.m);
- svg.hidden=s!=="atom";cv.hidden=s==="atom";
+ svg.toggleAttribute("hidden",s!=="atom");svg.style.display=s==="atom"?"":"none";cv.toggleAttribute("hidden",s==="atom");
  if(s!=="atom")resizeCanvas();
  if(!lab.revealed){const t=$("tabElec");t.disabled=true;t.textContent="🔒 Electricity";t.title="Answer the question to unlock"}
  updateLabUI();
